@@ -1,0 +1,52 @@
+#+TITLE: clawvault: Secure Credential Hardware Bridge
+#+AUTHOR: Jian
+#+DESCRIPTION: A secure USB/Bluetooth hardware device for managing user credentials, specifically designed for agents like openclaw.
+
+* Introduction
+clawvault is a hardware-based solution for secure credential management. It eliminates the need for users to store sensitive credentials in plain-text configurations or local databases. By storing all credentials on a dedicated device that requires multi-factor authentication (MFA) via a mobile phone over Bluetooth, clawvault ensures high security and ease of use for agents like =openclaw= and other automated systems.
+
+* Core Features
+- **Secure Hardware Storage**: Credentials are stored on an encrypted, tamper-resistant hardware module.
+- **Bluetooth Authentication**: The device remains locked until authenticated by a paired mobile phone via Bluetooth LE.
+- **Multi-Interface Access**: Supports USB-C for host connection and Bluetooth for mobile interaction.
+- **Brute-Force Protection**: Implements rate-limiting and self-destruct (optional/configurable) mechanisms after multiple failed authentication attempts.
+- **Seamless Integration**: Provides a standardized interface (HID, Virtual Serial, or custom driver) for agents and CLI tools to request credentials securely.
+
+* Architecture Overview
+#+BEGIN_SRC 
++------------------+          +-------------------+          +-------------------+
+|                  |   BLE    |                   |   USB    |                   |
+|   Mobile App     | <------> |     clawvault     | <------> |   Host Device     |
+| (Authentication) |          | (Secure Storage)  |          | (openclaw/Agents) |
++------------------+          +-------------------+          +-------------------+
+#+END_SRC
+
+** 1. clawvault Hardware
+- Microcontroller with secure enclave or external TPM.
+- Bluetooth Low Energy (BLE) module.
+- USB-C interface.
+
+** 2. Mobile Authenticator
+- A dedicated app that manages device pairing and grants access via biometric or PIN authentication.
+
+** 3. Host Agent
+- A lightweight service/driver running on the host machine that communicates with the clawvault device to retrieve credentials upon request.
+
+* Security Design
+- **End-to-End Encryption**: All communication between the mobile app, device, and host is encrypted using modern cryptographic standards (e.g., AES-256-GCM, RSA/ECC).
+- **Physical Security**: The device is designed to be tamper-evident.
+- **Zero-Knowledge Architecture**: The host device never sees the master encryption key; it only receives the specific credentials it is authorized to access after successful authentication.
+
+* Usage Scenario: openclaw
+Instead of configuring =openclaw= with an API key in a =.env= file:
+1. Plug clawvault into the USB port.
+2. openclaw requests the API key from the clawvault host agent.
+3. clawvault notifies the mobile app via Bluetooth.
+4. User approves the request on their phone (FaceID/Fingerprint).
+5. clawvault releases the API key to openclaw over the secure USB channel.
+
+* Future Work
+- **Protocol Specification**: Define a lightweight JSON-over-Serial or HID-based protocol for agent communication.
+- Support for FIDO2/WebAuthn.
+- Cloud-based backup with encrypted sharding (SSS).
+- Expansion to support more agents and legacy applications via virtual keyboard emulation.
